@@ -5,6 +5,11 @@ type KeyHandler = (event: KeyboardEvent) => void;
 export function useHotkeys(key: string, callback: KeyHandler): void {
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
+      // Early return if key is not a valid string
+      if (!key || typeof key !== 'string') {
+        return;
+      }
+      
       // Parse the key combination
       const keys = key.toLowerCase().split('+');
       const mainKey = keys[keys.length - 1];
