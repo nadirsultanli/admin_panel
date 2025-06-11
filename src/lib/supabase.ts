@@ -15,8 +15,8 @@ const hasValidCredentials = () => {
 };
 
 // Create Supabase client with TypeScript support
-// Using service role key to bypass RLS policies
-export const supabase = createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
+// Using anonymous key for client-side operations including authentication
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
@@ -29,7 +29,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseServiceRoleK
   },
   global: {
     headers: {
-      'apikey': supabaseServiceRoleKey
+      'apikey': supabaseAnonKey
     }
   }
 });
