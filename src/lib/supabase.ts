@@ -2,14 +2,14 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/supabase';
 import { logger } from './logger';
 
-// Environment variables
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Environment variables with fallbacks for development
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://trcrjinrdjgizqhjdgvc.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRyY3JqaW5yZGpnaXpxaGpkZ3ZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNDE2NTAsImV4cCI6MjA2NDYxNzY1MH0.2-y5r5UzIfcGoHc6BPkRy5rnxWxl4SJwxUehPWBxAao';
 
 // Check if we have valid Supabase credentials
 const hasValidCredentials = () => {
-  return supabaseUrl && 
-         supabaseAnonKey &&
+  return supabaseUrl !== 'https://your-project.supabase.co' && 
+         supabaseAnonKey !== 'your-anon-key' &&
          supabaseUrl.includes('supabase.co') &&
          supabaseAnonKey.length > 20;
 };

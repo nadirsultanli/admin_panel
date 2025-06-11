@@ -5,11 +5,6 @@ type KeyHandler = (event: KeyboardEvent) => void;
 export function useHotkeys(key: string, callback: KeyHandler): void {
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
-      // Early return if key is not a valid string
-      if (!key || typeof key !== 'string') {
-        return;
-      }
-      
       // Parse the key combination
       const keys = key.toLowerCase().split('+');
       const mainKey = keys[keys.length - 1];
@@ -25,8 +20,8 @@ export function useHotkeys(key: string, callback: KeyHandler): void {
       const altMatches = altRequired === event.altKey;
       const metaMatches = metaRequired === event.metaKey;
       
-      // Check if the main key matches
-      const keyMatches = event.key.toLowerCase() === mainKey;
+      // Check if the main key matches - add null check to prevent errors
+      const keyMatches = event.key && event.key.toLowerCase() === mainKey;
       
       // If all conditions match, call the callback
       if (ctrlMatches && shiftMatches && altMatches && metaMatches && keyMatches) {
