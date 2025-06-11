@@ -15,9 +15,22 @@ const hasValidCredentials = () => {
          supabaseAnonKey.length > 20;
 };
 
-// Create Supabase client with TypeScript support
-// Using service role key to bypass RLS policies for admin access
-export const supabase = createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
+// Create regular Supabase client with anon key for normal user operations
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
+  }
+});
+
+// Create admin Supabase client with service role key for admin operations
+export const supabaseAdmin = createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
@@ -34,9 +47,6 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseServiceRoleK
     }
   }
 });
-
-// Export admin client as alias of the main client (already configured with service role)
-export const supabaseAdmin = supabase;
 
 // Helper function to handle Supabase errors
 export const handleSupabaseError = (error: any): string => {
@@ -128,7 +138,7 @@ export const isUserAdmin = async (): Promise<boolean> => {
     
     // If not in metadata, check admin_users table
     if (!isAdmin) {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('admin_users')
         .select('*')
         .eq('email', user.email)
