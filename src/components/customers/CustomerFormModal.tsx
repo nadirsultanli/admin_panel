@@ -162,6 +162,15 @@ export function CustomerFormModal({
     setIsSubmitting(true);
 
     try {
+      // Check authentication status first
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        toast.error('Authentication required. Please log in to continue.');
+        setIsSubmitting(false);
+        return;
+      }
+
       // Check tax ID uniqueness if provided
       if (data.tax_id && data.tax_id.trim() !== '') {
         const isUnique = await checkTaxIdUniqueness(data.tax_id.trim(), customer?.id);
@@ -201,7 +210,7 @@ export function CustomerFormModal({
 
         toast.success('Customer updated successfully');
       } else {
-        // Create new customer
+        // Create new customer - ensure we're authenticated
         const { data: newCustomer, error } = await supabase
           .from('customers')
           .insert({
@@ -239,6 +248,10 @@ export function CustomerFormModal({
         } else {
           toast.error('A customer with this information already exists');
         }
+      } else if (error.code === '42501' || error.message?.includes('row-level security policy')) {
+        // RLS policy violation
+        toast.error('Permission denied. Please ensure you are properly authenticated.');
+        console.error('RLS Policy Error:', error);
       } else {
         toast.error(
           error.message || 
