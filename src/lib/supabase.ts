@@ -35,6 +35,9 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseServiceRoleK
   }
 });
 
+// Export admin client as alias of the main client (already configured with service role)
+export const supabaseAdmin = supabase;
+
 // Helper function to handle Supabase errors
 export const handleSupabaseError = (error: any): string => {
   if (!error) return 'An unknown error occurred';
