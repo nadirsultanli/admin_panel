@@ -10,13 +10,13 @@ const supabaseServiceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ
 // Check if we have valid Supabase credentials
 const hasValidCredentials = () => {
   return supabaseUrl !== 'https://your-project.supabase.co' && 
-         (supabaseAnonKey !== 'your-anon-key' || supabaseServiceRoleKey.length > 20) &&
-         supabaseUrl.includes('supabase.co');
+         supabaseUrl.includes('supabase.co') &&
+         (supabaseServiceRoleKey.length > 20);
 };
 
-// Create Supabase client with TypeScript support
-// Using anonymous key for client-side operations including authentication
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+// Create Supabase client with TypeScript support using the service role key
+// This gives the admin panel full database access, bypassing RLS policies
+export const supabase = createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
@@ -29,7 +29,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   },
   global: {
     headers: {
-      'apikey': supabaseAnonKey
+      'apikey': supabaseServiceRoleKey
     }
   }
 });
