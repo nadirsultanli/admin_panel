@@ -6,6 +6,14 @@ import { logger } from './logger';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
 
+// Check if we have valid Supabase credentials
+const hasValidCredentials = () => {
+  return supabaseUrl !== 'https://your-project.supabase.co' && 
+         supabaseAnonKey !== 'your-anon-key' &&
+         supabaseUrl.includes('supabase.co') &&
+         supabaseAnonKey.length > 20;
+};
+
 // Create Supabase client with TypeScript support
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -29,11 +37,22 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
 export const handleSupabaseError = (error: any): string => {
   if (!error) return 'An unknown error occurred';
   
+  // Check for invalid credentials first
+  if (!hasValidCredentials()) {
+    const message = 'Supabase is not configured. Please set up your Supabase project credentials in the .env file.';
+    logger.warn(message, { context: 'Supabase Configuration' });
+    return message;
+  }
+  
   // Log the error for debugging
   logger.error(error, { context: 'Supabase' });
   
   // Handle different types of errors
   if (error.message) {
+    // Handle common network errors
+    if (error.message.includes('Failed to fetch')) {
+      return 'Unable to connect to the database. Please check your internet connection and Supabase configuration.';
+    }
     return error.message;
   }
   
@@ -47,6 +66,12 @@ export const handleSupabaseError = (error: any): string => {
 // Connection test function
 export const testConnection = async (): Promise<boolean> => {
   try {
+    // First check if we have valid credentials
+    if (!hasValidCredentials()) {
+      logger.warn('Supabase credentials not configured', { context: 'Connection' });
+      return false;
+    }
+
     const { data, error } = await supabase.from('customers').select('count').limit(1);
     if (error) {
       logger.error('Supabase connection test error:', { context: 'Connection', data: error });
@@ -62,6 +87,11 @@ export const testConnection = async (): Promise<boolean> => {
 // Get current authenticated user
 export const getCurrentUser = async () => {
   try {
+    if (!hasValidCredentials()) {
+      logger.warn('Cannot get user - Supabase not configured', { context: 'Auth' });
+      return null;
+    }
+
     const { data: { user }, error } = await supabase.auth.getUser();
     
     if (error) {
@@ -79,6 +109,11 @@ export const getCurrentUser = async () => {
 // Check if user has admin role
 export const isUserAdmin = async (): Promise<boolean> => {
   try {
+    if (!hasValidCredentials()) {
+      logger.warn('Cannot check admin status - Supabase not configured', { context: 'Auth' });
+      return false;
+    }
+
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) return false;
@@ -105,3 +140,6 @@ export const isUserAdmin = async (): Promise<boolean> => {
     return false;
   }
 };
+
+// Export helper to check if Supabase is properly configured
+export const isSupabaseConfigured = hasValidCredentials;
