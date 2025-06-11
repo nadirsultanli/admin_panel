@@ -23,7 +23,7 @@ import {
   RefreshCw,
   Activity
 } from 'lucide-react';
-import { supabase, handleSupabaseError } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { useRealtimeDashboard } from '@/hooks/useRealtimeDashboard';
 import { DashboardMetrics } from '@/components/dashboard/DashboardMetrics';
@@ -62,7 +62,6 @@ export function Dashboard() {
       if (error) {
         console.error('Supabase connection error:', error);
         setConnectionStatus('error');
-        toast.error(`Connection failed: ${handleSupabaseError(error)}`);
         return;
       }
       
@@ -72,7 +71,6 @@ export function Dashboard() {
     } catch (error) {
       console.error('Connection test error:', error);
       setConnectionStatus('error');
-      toast.error(`Connection test failed: ${handleSupabaseError(error)}`);
     }
   };
 

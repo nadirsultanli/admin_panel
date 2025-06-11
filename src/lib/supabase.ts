@@ -68,9 +68,7 @@ export const testConnection = async (): Promise<{ success: boolean; error?: stri
   try {
     // First check if we have valid credentials
     if (!hasValidCredentials()) {
-      const message = 'Supabase credentials not configured. Please check your .env file and ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set correctly.';
-      logger.warn(message, { context: 'Connection' });
-      return { success: false, error: message };
+      return { success: false };
     }
 
     const { data, error } = await supabase.from('customers').select('count').limit(1);
