@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Menu, Search, Bell, User, X, AlertTriangle, Package, CheckCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Menu, Search, Bell, User, X, AlertTriangle, Package, CheckCircle, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -10,6 +10,8 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { useNavigate } from 'react-router-dom';
 import { useHotkeys } from '@/hooks/useHotkeys';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 interface HeaderProps {
   onToggleSidebar: () => void;
@@ -28,6 +30,19 @@ export function Header({ onToggleSidebar }: HeaderProps) {
     orders: [],
     products: []
   });
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  // Get user email on component mount
+  useEffect(() => {
+    const getUserEmail = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserEmail(user.email);
+      }
+    };
+    
+    getUserEmail();
+  }, []);
 
   // Register keyboard shortcut
   useHotkeys('ctrl+k', () => {
@@ -73,6 +88,19 @@ export function Header({ onToggleSidebar }: HeaderProps) {
       case 'product':
         navigate(`/products/${id}`);
         break;
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      toast.success('Signed out successfully');
+      navigate('/login');
+    } catch (error: any) {
+      console.error('Sign out error:', error);
+      toast.error(error.message || 'Failed to sign out');
     }
   };
 
@@ -293,13 +321,13 @@ export function Header({ onToggleSidebar }: HeaderProps) {
                 className="bg-white text-gray-900 border-gray-300 hover:bg-gray-50 hover:text-gray-900"
               >
                 <User className="mr-2 h-4 w-4" />
-                Admin User
+                {userEmail ? userEmail.split('@')[0] : 'Admin User'}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-56" align="end">
               <div className="flex flex-col space-y-1 p-2">
-                <div className="text-sm font-medium">Admin User</div>
-                <div className="text-xs text-muted-foreground">admin@example.com</div>
+                <div className="text-sm font-medium">{userEmail || 'Admin User'}</div>
+                <div className="text-xs text-muted-foreground">{userEmail || 'admin@example.com'}</div>
               </div>
               <Separator className="my-2" />
               <div className="flex flex-col space-y-1">
@@ -314,7 +342,13 @@ export function Header({ onToggleSidebar }: HeaderProps) {
                 </Button>
               </div>
               <Separator className="my-2" />
-              <Button variant="ghost" size="sm" className="justify-start text-red-600 hover:text-red-700 hover:bg-red-50">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={handleSignOut}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
                 Sign Out
               </Button>
             </PopoverContent>
