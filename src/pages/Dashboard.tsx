@@ -62,15 +62,17 @@ export function Dashboard() {
       if (error) {
         console.error('Supabase connection error:', error);
         setConnectionStatus('error');
+        toast.error(`Connection failed: ${error.message}`);
         return;
       }
       
       setConnectionStatus('connected');
-      toast.success('Supabase connection successful!');
+      toast.success('Connected to Supabase successfully!');
       
     } catch (error) {
       console.error('Connection test error:', error);
       setConnectionStatus('error');
+      toast.error('Connection test failed. Please check your Supabase configuration.');
     }
   };
 

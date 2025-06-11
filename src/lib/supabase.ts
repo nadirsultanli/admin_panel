@@ -3,13 +3,13 @@ import type { Database } from '@/types/supabase';
 import { logger } from './logger';
 
 // Environment variables with fallbacks for development
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Check if we have valid Supabase credentials
 const hasValidCredentials = () => {
-  return supabaseUrl !== 'https://your-project.supabase.co' && 
-         supabaseAnonKey !== 'your-anon-key' &&
+  return supabaseUrl && 
+         supabaseAnonKey &&
          supabaseUrl.includes('supabase.co') &&
          supabaseAnonKey.length > 20;
 };
@@ -64,23 +64,23 @@ export const handleSupabaseError = (error: any): string => {
 };
 
 // Connection test function
-export const testConnection = async (): Promise<{ success: boolean; error?: string }> => {
+export const testConnection = async (): Promise<boolean> => {
   try {
     // First check if we have valid credentials
     if (!hasValidCredentials()) {
-      return { success: false };
+      logger.warn('Supabase credentials not configured', { context: 'Connection' });
+      return false;
     }
 
     const { data, error } = await supabase.from('customers').select('count').limit(1);
     if (error) {
       logger.error('Supabase connection test error:', { context: 'Connection', data: error });
-      return { success: false, error: handleSupabaseError(error) };
+      return false;
     }
-    return { success: true };
+    return true;
   } catch (error) {
     logger.error('Supabase connection test failed:', { context: 'Connection', data: error });
-    const errorMessage = error instanceof Error ? handleSupabaseError(error) : 'Connection test failed';
-    return { success: false, error: errorMessage };
+    return false;
   }
 };
 
