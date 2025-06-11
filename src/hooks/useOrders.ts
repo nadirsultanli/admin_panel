@@ -37,16 +37,6 @@ export function useOrders(): UseOrdersReturn {
     setError(null);
 
     try {
-      // Check if user is authenticated
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        console.error('Authentication error:', authError);
-        setError('Authentication required. Please log in.');
-        setLoading(false);
-        return;
-      }
-      
       // Generate mock order data
       const mockOrders: Order[] = [
         {
@@ -188,6 +178,62 @@ export function useOrders(): UseOrdersReturn {
             line2: 'Plot 45',
             state: 'Nairobi'
           }
+        },
+        {
+          id: '990e8400-e29b-41d4-a716-446655440006',
+          customer_id: '550e8400-e29b-41d4-a716-446655440006',
+          delivery_address_id: '660e8400-e29b-41d4-a716-446655440007',
+          order_date: '2024-01-19',
+          scheduled_date: '2024-01-21',
+          status: 'confirmed',
+          cylinder_size: '13kg',
+          quantity: 8,
+          price_kes: 2599.00,
+          total_amount_kes: '20792.00',
+          notes: 'Safari lodge weekly supply',
+          created_at: '2024-01-19T10:15:00Z',
+          updated_at: '2024-01-19T12:30:00Z',
+          customer: {
+            id: '550e8400-e29b-41d4-a716-446655440006',
+            name: 'Safari Lodge Catering',
+            phone: '+254706789012',
+            email: 'catering@safarilodge.co.ke'
+          },
+          delivery_address: {
+            id: '660e8400-e29b-41d4-a716-446655440007',
+            city: 'Nairobi',
+            line1: 'Langata Road',
+            line2: 'KM 15',
+            state: 'Nairobi'
+          }
+        },
+        {
+          id: '990e8400-e29b-41d4-a716-446655440007',
+          customer_id: '550e8400-e29b-41d4-a716-446655440001',
+          delivery_address_id: '660e8400-e29b-41d4-a716-446655440002',
+          order_date: '2024-01-19',
+          scheduled_date: null,
+          status: 'draft',
+          cylinder_size: '6kg',
+          quantity: 6,
+          price_kes: 1899.00,
+          total_amount_kes: '11394.00',
+          notes: 'Branch office monthly order - draft',
+          created_at: '2024-01-19T15:45:00Z',
+          updated_at: '2024-01-19T15:45:00Z',
+          customer: {
+            id: '550e8400-e29b-41d4-a716-446655440001',
+            name: 'Acme Restaurant Group',
+            phone: '+254701234567',
+            email: 'orders@acmerestaurants.co.ke'
+          },
+          delivery_address: {
+            id: '660e8400-e29b-41d4-a716-446655440002',
+            city: 'Nairobi',
+            line1: 'Sarit Centre',
+            line2: 'Level 1',
+            state: 'Nairobi'
+          }
         }
       ];
       
@@ -269,13 +315,6 @@ export function useOrders(): UseOrdersReturn {
 
   const updateOrderStatus = useCallback(async (orderId: string, newStatus: string): Promise<boolean> => {
     try {
-      // Check if user is authenticated
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        throw new Error('Authentication required. Please log in.');
-      }
-      
       // In a real implementation, this would update the order status in the database
       // For now, we'll simulate a successful update
       
@@ -296,13 +335,6 @@ export function useOrders(): UseOrdersReturn {
 
   const cancelOrder = useCallback(async (orderId: string): Promise<boolean> => {
     try {
-      // Check if user is authenticated
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        throw new Error('Authentication required. Please log in.');
-      }
-      
       // In a real implementation, this would update the order status to cancelled in the database
       // For now, we'll simulate a successful cancellation
       
@@ -320,13 +352,6 @@ export function useOrders(): UseOrdersReturn {
 
   const bulkUpdateStatus = useCallback(async (orderIds: string[], status: string): Promise<boolean> => {
     try {
-      // Check if user is authenticated
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        throw new Error('Authentication required. Please log in.');
-      }
-      
       // In a real implementation, this would update multiple orders in the database
       // For now, we'll simulate a successful update
       
@@ -351,13 +376,6 @@ export function useOrders(): UseOrdersReturn {
 
   const exportOrdersToCSV = useCallback(async (orderIds?: string[]): Promise<string> => {
     try {
-      // Check if user is authenticated
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        throw new Error('Authentication required. Please log in.');
-      }
-      
       // In a real implementation, this would query the database for orders
       // For now, we'll generate a simple CSV with mock data
       

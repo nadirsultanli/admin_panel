@@ -69,14 +69,6 @@ const DEFAULT_INVENTORY = [
 
 export async function checkIfInventoryExists(): Promise<boolean> {
   try {
-    // Check if user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      console.error('Authentication error:', authError);
-      return false;
-    }
-    
     // For demo purposes, we'll just return false initially
     // In a real implementation, this would check the database
     return false;

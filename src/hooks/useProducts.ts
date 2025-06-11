@@ -35,16 +35,6 @@ export function useProducts(): UseProductsReturn {
     setError(null);
 
     try {
-      // Check if user is authenticated
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        console.error('Authentication error:', authError);
-        setError('Authentication required. Please log in.');
-        setLoading(false);
-        return;
-      }
-      
       // Generate mock product data
       const mockProducts: Product[] = [
         {
@@ -180,13 +170,6 @@ export function useProducts(): UseProductsReturn {
     setError(null);
 
     try {
-      // Check if user is authenticated
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        throw new Error('Authentication required. Please log in.');
-      }
-      
       // In a real implementation, this would create a product in the database
       // For now, we'll simulate a successful creation
       const newProduct: Product = {
@@ -215,13 +198,6 @@ export function useProducts(): UseProductsReturn {
     setError(null);
 
     try {
-      // Check if user is authenticated
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        throw new Error('Authentication required. Please log in.');
-      }
-      
       // In a real implementation, this would update a product in the database
       // For now, we'll simulate a successful update
       const updatedProduct: Product = {
@@ -250,13 +226,6 @@ export function useProducts(): UseProductsReturn {
     setError(null);
 
     try {
-      // Check if user is authenticated
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        throw new Error('Authentication required. Please log in.');
-      }
-      
       // In a real implementation, this would delete a product from the database
       // For now, we'll simulate a successful deletion
       toast.success('Product deleted successfully');
@@ -279,13 +248,6 @@ export function useProducts(): UseProductsReturn {
     setError(null);
 
     try {
-      // Check if user is authenticated
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        throw new Error('Authentication required. Please log in.');
-      }
-      
       // In a real implementation, this would update multiple products in the database
       // For now, we'll simulate a successful update
       toast.success(`${ids.length} product(s) updated successfully`);

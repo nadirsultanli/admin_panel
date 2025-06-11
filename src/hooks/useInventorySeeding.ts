@@ -27,15 +27,6 @@ export function useInventorySeeding(): UseInventorySeedingReturn {
   const checkInventoryExists = useCallback(async () => {
     setLoading(true);
     try {
-      // Check if user is authenticated
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        console.error('Authentication error:', authError);
-        setLoading(false);
-        return;
-      }
-      
       // For demo purposes, we'll just set this to false initially
       // In a real implementation, this would check the database
       setHasExistingInventory(false);
@@ -52,13 +43,6 @@ export function useInventorySeeding(): UseInventorySeedingReturn {
     setSeedingProgress(null);
 
     try {
-      // Check if user is authenticated
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        throw new Error('Authentication required. Please log in.');
-      }
-      
       // Simulate seeding process with progress updates
       const totalSteps = 4;
       
@@ -107,13 +91,6 @@ export function useInventorySeeding(): UseInventorySeedingReturn {
   const exportInventory = useCallback(async () => {
     setLoading(true);
     try {
-      // Check if user is authenticated
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        throw new Error('Authentication required. Please log in.');
-      }
-      
       // Generate mock CSV content
       const csvContent = `"Warehouse","Product SKU","Product Name","Full Qty","Empty Qty","Reserved Qty","Available Qty","Last Updated"
 "Main Depot","CYL-6KG-STD","6kg Standard Cylinder","200","100","15","185","${new Date().toLocaleDateString()}"
@@ -124,6 +101,9 @@ export function useInventorySeeding(): UseInventorySeedingReturn {
       // Simulate download
       const timestamp = new Date().toISOString().split('T')[0];
       console.log(`Exporting inventory to CSV: inventory-export-${timestamp}.csv`);
+      
+      // In a real implementation, this would download the file
+      // downloadCSV(csvContent, `inventory-export-${timestamp}.csv`);
       
       toast.success('Inventory exported successfully!');
     } catch (error) {

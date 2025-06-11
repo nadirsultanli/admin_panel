@@ -35,16 +35,6 @@ export function useCustomers(): UseCustomersReturn {
     setError(null);
 
     try {
-      // Check if user is authenticated
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        console.error('Authentication error:', authError);
-        setError('Authentication required. Please log in.');
-        setLoading(false);
-        return;
-      }
-      
       // Generate mock customer data
       const mockCustomers: Customer[] = [
         {
@@ -106,6 +96,66 @@ export function useCustomers(): UseCustomersReturn {
           credit_terms_days: 30,
           created_at: '2024-01-05T00:00:00Z',
           updated_at: '2024-01-05T00:00:00Z'
+        },
+        {
+          id: '550e8400-e29b-41d4-a716-446655440006',
+          external_id: 'CUST006',
+          name: 'Safari Lodge Catering',
+          tax_id: 'P051234572F',
+          phone: '+254706789012',
+          email: 'catering@safarilodge.co.ke',
+          account_status: 'active',
+          credit_terms_days: 45,
+          created_at: '2024-01-06T00:00:00Z',
+          updated_at: '2024-01-06T00:00:00Z'
+        },
+        {
+          id: '550e8400-e29b-41d4-a716-446655440007',
+          external_id: 'CUST007',
+          name: 'Nairobi Hospital Cafeteria',
+          tax_id: 'P051234573G',
+          phone: '+254707890123',
+          email: 'cafeteria@nairobihospital.co.ke',
+          account_status: 'active',
+          credit_terms_days: 30,
+          created_at: '2024-01-07T00:00:00Z',
+          updated_at: '2024-01-07T00:00:00Z'
+        },
+        {
+          id: '550e8400-e29b-41d4-a716-446655440008',
+          external_id: 'CUST008',
+          name: 'University Dining Hall',
+          tax_id: 'P051234574H',
+          phone: '+254708901234',
+          email: 'dining@university.ac.ke',
+          account_status: 'active',
+          credit_terms_days: 60,
+          created_at: '2024-01-08T00:00:00Z',
+          updated_at: '2024-01-08T00:00:00Z'
+        },
+        {
+          id: '550e8400-e29b-41d4-a716-446655440009',
+          external_id: 'CUST009',
+          name: 'Westlands Food Court',
+          tax_id: 'P051234575I',
+          phone: '+254709012345',
+          email: 'manager@westlandsfoodcourt.co.ke',
+          account_status: 'credit_hold',
+          credit_terms_days: 15,
+          created_at: '2024-01-09T00:00:00Z',
+          updated_at: '2024-01-09T00:00:00Z'
+        },
+        {
+          id: '550e8400-e29b-41d4-a716-446655440010',
+          external_id: 'CUST010',
+          name: 'Karen Country Club',
+          tax_id: 'P051234576J',
+          phone: '+254710123456',
+          email: 'kitchen@karencountryclub.co.ke',
+          account_status: 'active',
+          credit_terms_days: 30,
+          created_at: '2024-01-10T00:00:00Z',
+          updated_at: '2024-01-10T00:00:00Z'
         }
       ];
       
@@ -153,13 +203,6 @@ export function useCustomers(): UseCustomersReturn {
     setError(null);
 
     try {
-      // Check if user is authenticated
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        throw new Error('Authentication required. Please log in.');
-      }
-      
       // In a real implementation, this would create a customer in the database
       // For now, we'll simulate a successful creation
       const newCustomer: Customer = {
@@ -189,13 +232,6 @@ export function useCustomers(): UseCustomersReturn {
     setError(null);
 
     try {
-      // Check if user is authenticated
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        throw new Error('Authentication required. Please log in.');
-      }
-      
       // In a real implementation, this would update a customer in the database
       // For now, we'll simulate a successful update
       const updatedCustomer: Customer = {
@@ -226,13 +262,6 @@ export function useCustomers(): UseCustomersReturn {
     setError(null);
 
     try {
-      // Check if user is authenticated
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        throw new Error('Authentication required. Please log in.');
-      }
-      
       // In a real implementation, this would delete a customer from the database
       // For now, we'll simulate a successful deletion
       toast.success('Customer deleted successfully');

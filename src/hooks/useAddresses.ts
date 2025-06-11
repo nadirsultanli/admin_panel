@@ -28,16 +28,6 @@ export function useAddresses(): UseAddressesReturn {
     setError(null);
 
     try {
-      // Check if user is authenticated
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        console.error('Authentication error:', authError);
-        setError('Authentication required. Please log in.');
-        setLoading(false);
-        return;
-      }
-      
       // Generate mock address data for the given customer
       const mockAddresses: Address[] = [
         {
@@ -92,13 +82,6 @@ export function useAddresses(): UseAddressesReturn {
     setError(null);
 
     try {
-      // Check if user is authenticated
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        throw new Error('Authentication required. Please log in.');
-      }
-      
       // In a real implementation, this would create an address in the database
       // For now, we'll simulate a successful creation
       const newAddress: Address = {
@@ -127,13 +110,6 @@ export function useAddresses(): UseAddressesReturn {
     setError(null);
 
     try {
-      // Check if user is authenticated
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        throw new Error('Authentication required. Please log in.');
-      }
-      
       // In a real implementation, this would update an address in the database
       // For now, we'll simulate a successful update
       const updatedAddress: Address = {
@@ -164,13 +140,6 @@ export function useAddresses(): UseAddressesReturn {
     setError(null);
 
     try {
-      // Check if user is authenticated
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        throw new Error('Authentication required. Please log in.');
-      }
-      
       // In a real implementation, this would delete an address from the database
       // For now, we'll simulate a successful deletion
       toast.success('Address deleted successfully');

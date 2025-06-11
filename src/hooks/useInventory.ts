@@ -32,16 +32,6 @@ export function useInventory(): UseInventoryReturn {
     setError(null);
 
     try {
-      // Check if user is authenticated
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        console.error('Authentication error:', authError);
-        setError('Authentication required. Please log in.');
-        setLoading(false);
-        return;
-      }
-      
       // Generate mock inventory data for the given product
       const mockInventory: InventoryBalance[] = [
         {
@@ -93,14 +83,6 @@ export function useInventory(): UseInventoryReturn {
 
   const fetchAdjustments = useCallback(async (productId: string) => {
     try {
-      // Check if user is authenticated
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        console.error('Authentication error:', authError);
-        return;
-      }
-      
       // Generate mock adjustment data
       const mockAdjustments: InventoryAdjustment[] = [
         {
@@ -149,14 +131,6 @@ export function useInventory(): UseInventoryReturn {
 
   const fetchAnalytics = useCallback(async (productId: string) => {
     try {
-      // Check if user is authenticated
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        console.error('Authentication error:', authError);
-        return;
-      }
-      
       // Generate mock analytics data
       const mockAnalytics: ProductUsageAnalytics = {
         total_delivered_month: 45,
@@ -190,13 +164,6 @@ export function useInventory(): UseInventoryReturn {
     setError(null);
 
     try {
-      // Check if user is authenticated
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        throw new Error('Authentication required. Please log in.');
-      }
-      
       // In a real implementation, this would update inventory in the database
       // For now, we'll simulate a successful adjustment
       toast.success('Inventory adjusted successfully');
