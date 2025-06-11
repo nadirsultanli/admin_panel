@@ -15,7 +15,7 @@ const PopoverContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content> & {
     hideCloseButton?: boolean
   }
->(({ className, align = "center", sideOffset = 4, hideCloseButton = false, ...props }, ref) => (
+>(({ className, align = "center", sideOffset = 4, hideCloseButton = true, ...props }, ref) => (
   <PopoverPrimitive.Portal>
     <PopoverPrimitive.Content
       ref={ref}

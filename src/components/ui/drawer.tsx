@@ -38,7 +38,7 @@ const DrawerContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content> & {
     hideCloseButton?: boolean
   }
->(({ className, children, hideCloseButton = false, ...props }, ref) => (
+>(({ className, children, hideCloseButton = true, ...props }, ref) => (
   <DrawerPortal>
     <DrawerOverlay />
     <DrawerPrimitive.Content

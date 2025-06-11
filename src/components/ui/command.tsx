@@ -25,7 +25,7 @@ interface CommandDialogProps extends DialogProps {
   hideCloseButton?: boolean
 }
 
-const CommandDialog = ({ children, hideCloseButton = false, ...props }: CommandDialogProps) => {
+const CommandDialog = ({ children, hideCloseButton = true, ...props }: CommandDialogProps) => {
   return (
     <Dialog {...props}>
       <DialogContent className="overflow-hidden p-0 shadow-lg" hideCloseButton={hideCloseButton}>

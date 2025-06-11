@@ -1,8 +1,8 @@
 import * as React from "react"
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog"
+import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { X } from "lucide-react"
 
 const AlertDialog = AlertDialogPrimitive.Root
 
@@ -15,12 +15,12 @@ const AlertDialogOverlay = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Overlay>
 >(({ className, ...props }, ref) => (
   <AlertDialogPrimitive.Overlay
+    ref={ref}
     className={cn(
       "fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className
     )}
     {...props}
-    ref={ref}
   />
 ))
 AlertDialogOverlay.displayName = AlertDialogPrimitive.Overlay.displayName
@@ -30,7 +30,7 @@ const AlertDialogContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Content> & {
     hideCloseButton?: boolean
   }
->(({ className, hideCloseButton = false, ...props }, ref) => (
+>(({ className, children, hideCloseButton = true, ...props }, ref) => (
   <AlertDialogPortal>
     <AlertDialogOverlay />
     <AlertDialogPrimitive.Content
@@ -41,7 +41,7 @@ const AlertDialogContent = React.forwardRef<
       )}
       {...props}
     >
-      {props.children}
+      {children}
       {!hideCloseButton && (
         <AlertDialogPrimitive.Cancel className="absolute right-4 top-4 rounded-full w-8 h-8 bg-white border border-gray-200 flex items-center justify-center transition-all hover:bg-red-50 hover:border-red-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-30">
           <X className="h-4 w-4 text-red-600 font-bold" strokeWidth={2.5} />
