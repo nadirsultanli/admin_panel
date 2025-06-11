@@ -22,18 +22,84 @@ export function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const createDemoUser = async () => {
+    try {
+      // First try to sign up the demo user
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: 'admin@example.com',
+        password: 'password123',
+        options: {
+          data: {
+            role: 'admin'
+          }
+        }
+      });
+
+      if (signUpError && !signUpError.message.includes('User already registered')) {
+        throw signUpError;
+      }
+
+      // If signup was successful or user already exists, try to sign in
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: 'admin@example.com',
+        password: 'password123'
+      });
+
+      if (signInError) {
+        throw signInError;
+      }
+
+      // Also create an admin user record if it doesn't exist
+      if (signInData.user) {
+        const { error: adminError } = await supabase
+          .from('admin_users')
+          .upsert({
+            id: signInData.user.id,
+            email: 'admin@example.com',
+            name: 'Demo Admin',
+            role: 'admin',
+            active: true
+          }, {
+            onConflict: 'id'
+          });
+
+        if (adminError) {
+          console.warn('Could not create admin user record:', adminError);
+        }
+      }
+
+      return signInData;
+    } catch (error) {
+      throw error;
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
 
     try {
+      // First attempt normal login
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
 
-      if (error) throw error;
+      if (error) {
+        // If it's the demo credentials and login failed, try to create the demo user
+        if (email === 'admin@example.com' && password === 'password123' && 
+            error.message.includes('Invalid login credentials')) {
+          
+          const demoData = await createDemoUser();
+          if (demoData.user) {
+            toast.success('Demo account created and logged in!');
+            navigate('/');
+            return;
+          }
+        }
+        throw error;
+      }
 
       if (data.user) {
         toast.success('Login successful!');
@@ -41,57 +107,33 @@ export function Login() {
       }
     } catch (error: any) {
       console.error('Login error:', error);
-      setError(error.message || 'Failed to sign in');
-      toast.error(error.message || 'Failed to sign in');
+      const errorMessage = error.message || 'Failed to sign in';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleDemoLogin = async () => {
-    setEmail('admin@example.com');
-    setPassword('password123');
-    
     setIsLoading(true);
     setError(null);
 
     try {
-      // For demo purposes, we'll use a direct login
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: 'admin@example.com',
-        password: 'password123'
-      });
-
-      if (error) {
-        // If the demo user doesn't exist, create it
-        if (error.message.includes('Invalid login credentials')) {
-          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-            email: 'admin@example.com',
-            password: 'password123',
-            options: {
-              data: {
-                role: 'admin'
-              }
-            }
-          });
-
-          if (signUpError) throw signUpError;
-          
-          toast.success('Demo account created and logged in!');
-          navigate('/');
-          return;
-        }
-        throw error;
-      }
-
+      const data = await createDemoUser();
+      
       if (data.user) {
         toast.success('Demo login successful!');
+        // Update the form fields to show demo credentials
+        setEmail('admin@example.com');
+        setPassword('password123');
         navigate('/');
       }
     } catch (error: any) {
       console.error('Demo login error:', error);
-      setError(error.message || 'Failed to sign in with demo account');
-      toast.error(error.message || 'Failed to sign in with demo account');
+      const errorMessage = error.message || 'Failed to sign in with demo account';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -197,6 +239,14 @@ export function Login() {
                 >
                   Demo Account (Instant Access)
                 </Button>
+              </div>
+            </div>
+
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <div className="text-xs text-blue-700">
+                <strong>Demo Credentials:</strong><br />
+                Email: admin@example.com<br />
+                Password: password123
               </div>
             </div>
           </CardContent>
