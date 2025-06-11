@@ -23,7 +23,7 @@ import {
   RefreshCw,
   Activity
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseAdmin, handleSupabaseError, isUserAdmin } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { useRealtimeDashboard } from '@/hooks/useRealtimeDashboard';
 import { DashboardMetrics } from '@/components/dashboard/DashboardMetrics';
@@ -36,6 +36,7 @@ export function Dashboard() {
   const navigate = useNavigate();
   const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'error'>('checking');
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  const [isAdmin, setIsAdmin] = useState(false);
   
   const { 
     metrics,
@@ -47,6 +48,16 @@ export function Dashboard() {
     refreshDashboard
   } = useRealtimeDashboard();
 
+  // Check if user is admin
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      const adminStatus = await isUserAdmin();
+      setIsAdmin(adminStatus);
+    };
+    
+    checkAdminStatus();
+  }, []);
+
   // Test Supabase connection on mount
   useEffect(() => {
     testSupabaseConnection();
@@ -57,22 +68,23 @@ export function Dashboard() {
       setConnectionStatus('checking');
       
       // Test basic connection
-      const { data, error } = await supabase.from('customers').select('count').limit(1);
+      const client = isAdmin ? supabaseAdmin : supabase;
+      const { data, error } = await client.from('customers').select('count').limit(1);
       
       if (error) {
         console.error('Supabase connection error:', error);
         setConnectionStatus('error');
-        toast.error(`Connection failed: ${error.message}`);
+        toast.error(`Connection failed: ${handleSupabaseError(error)}`);
         return;
       }
       
       setConnectionStatus('connected');
-      toast.success('Connected to Supabase successfully!');
+      toast.success('Supabase connection successful!');
       
     } catch (error) {
       console.error('Connection test error:', error);
       setConnectionStatus('error');
-      toast.error('Connection test failed. Please check your Supabase configuration.');
+      toast.error(`Connection test failed: ${handleSupabaseError(error)}`);
     }
   };
 

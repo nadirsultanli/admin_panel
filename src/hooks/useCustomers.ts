@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseAdmin, isUserAdmin } from '@/lib/supabase';
 import type { Customer, CustomerFilters } from '@/types/customer';
 import { toast } from 'sonner';
 
@@ -21,6 +21,16 @@ export function useCustomers(): UseCustomersReturn {
   const [error, setError] = useState<string | null>(null);
   const [totalCount, setTotalCount] = useState(0);
   const [lastSuccessfulData, setLastSuccessfulData] = useState<Customer[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      const adminStatus = await isUserAdmin();
+      setIsAdmin(adminStatus);
+    };
+    
+    checkAdminStatus();
+  }, []);
 
   const clearError = useCallback(() => {
     setError(null);
@@ -35,166 +45,61 @@ export function useCustomers(): UseCustomersReturn {
     setError(null);
 
     try {
-      // Generate mock customer data
-      const mockCustomers: Customer[] = [
-        {
-          id: '550e8400-e29b-41d4-a716-446655440001',
-          external_id: 'CUST001',
-          name: 'Acme Restaurant Group',
-          tax_id: '12-3456789',
-          phone: '+254701234567',
-          email: 'orders@acmerestaurants.co.ke',
-          account_status: 'active',
-          credit_terms_days: 30,
-          created_at: '2024-01-01T00:00:00Z',
-          updated_at: '2024-01-01T00:00:00Z'
-        },
-        {
-          id: '550e8400-e29b-41d4-a716-446655440002',
-          external_id: 'CUST002',
-          name: 'Downtown Diner',
-          tax_id: '98-7654321',
-          phone: '+254702345678',
-          email: 'manager@downtowndiner.co.ke',
-          account_status: 'active',
-          credit_terms_days: 15,
-          created_at: '2024-01-02T00:00:00Z',
-          updated_at: '2024-01-02T00:00:00Z'
-        },
-        {
-          id: '550e8400-e29b-41d4-a716-446655440003',
-          external_id: 'CUST003',
-          name: 'City Catering Co',
-          tax_id: '11-2233445',
-          phone: '+254703456789',
-          email: 'purchasing@citycatering.co.ke',
-          account_status: 'credit_hold',
-          credit_terms_days: 45,
-          created_at: '2024-01-03T00:00:00Z',
-          updated_at: '2024-01-03T00:00:00Z'
-        },
-        {
-          id: '550e8400-e29b-41d4-a716-446655440004',
-          external_id: 'CUST004',
-          name: 'Suburban Grill',
-          tax_id: '55-6677889',
-          phone: '+254704567890',
-          email: 'owner@suburbangrill.co.ke',
-          account_status: 'active',
-          credit_terms_days: 30,
-          created_at: '2024-01-04T00:00:00Z',
-          updated_at: '2024-01-04T00:00:00Z'
-        },
-        {
-          id: '550e8400-e29b-41d4-a716-446655440005',
-          external_id: 'CUST005',
-          name: 'Mama Njeri Kitchen',
-          tax_id: 'P051234571E',
-          phone: '+254705678901',
-          email: 'mama@njerikitchen.co.ke',
-          account_status: 'active',
-          credit_terms_days: 30,
-          created_at: '2024-01-05T00:00:00Z',
-          updated_at: '2024-01-05T00:00:00Z'
-        },
-        {
-          id: '550e8400-e29b-41d4-a716-446655440006',
-          external_id: 'CUST006',
-          name: 'Safari Lodge Catering',
-          tax_id: 'P051234572F',
-          phone: '+254706789012',
-          email: 'catering@safarilodge.co.ke',
-          account_status: 'active',
-          credit_terms_days: 45,
-          created_at: '2024-01-06T00:00:00Z',
-          updated_at: '2024-01-06T00:00:00Z'
-        },
-        {
-          id: '550e8400-e29b-41d4-a716-446655440007',
-          external_id: 'CUST007',
-          name: 'Nairobi Hospital Cafeteria',
-          tax_id: 'P051234573G',
-          phone: '+254707890123',
-          email: 'cafeteria@nairobihospital.co.ke',
-          account_status: 'active',
-          credit_terms_days: 30,
-          created_at: '2024-01-07T00:00:00Z',
-          updated_at: '2024-01-07T00:00:00Z'
-        },
-        {
-          id: '550e8400-e29b-41d4-a716-446655440008',
-          external_id: 'CUST008',
-          name: 'University Dining Hall',
-          tax_id: 'P051234574H',
-          phone: '+254708901234',
-          email: 'dining@university.ac.ke',
-          account_status: 'active',
-          credit_terms_days: 60,
-          created_at: '2024-01-08T00:00:00Z',
-          updated_at: '2024-01-08T00:00:00Z'
-        },
-        {
-          id: '550e8400-e29b-41d4-a716-446655440009',
-          external_id: 'CUST009',
-          name: 'Westlands Food Court',
-          tax_id: 'P051234575I',
-          phone: '+254709012345',
-          email: 'manager@westlandsfoodcourt.co.ke',
-          account_status: 'credit_hold',
-          credit_terms_days: 15,
-          created_at: '2024-01-09T00:00:00Z',
-          updated_at: '2024-01-09T00:00:00Z'
-        },
-        {
-          id: '550e8400-e29b-41d4-a716-446655440010',
-          external_id: 'CUST010',
-          name: 'Karen Country Club',
-          tax_id: 'P051234576J',
-          phone: '+254710123456',
-          email: 'kitchen@karencountryclub.co.ke',
-          account_status: 'active',
-          credit_terms_days: 30,
-          created_at: '2024-01-10T00:00:00Z',
-          updated_at: '2024-01-10T00:00:00Z'
-        }
-      ];
+      // Use the appropriate client based on admin status
+      const client = isAdmin ? supabaseAdmin : supabase;
       
+      let query = client
+        .from('customers')
+        .select('*', { count: 'exact' });
+
       // Apply search filter
-      let filteredCustomers = [...mockCustomers];
-      
       if (filters.search && filters.search.trim()) {
-        const searchTerm = filters.search.trim().toLowerCase();
-        filteredCustomers = filteredCustomers.filter(customer => 
-          customer.name.toLowerCase().includes(searchTerm) ||
-          (customer.tax_id && customer.tax_id.toLowerCase().includes(searchTerm))
-        );
+        query = query.or(`name.ilike.%${filters.search.trim()}%,tax_id.ilike.%${filters.search.trim()}%,phone.ilike.%${filters.search.trim()}%`);
       }
-      
+
       // Apply status filter
       if (filters.status !== 'all') {
-        filteredCustomers = filteredCustomers.filter(customer => 
-          customer.account_status === filters.status
-        );
+        query = query.eq('account_status', filters.status);
       }
-      
+
       // Apply pagination
       const from = (page - 1) * limit;
-      const to = from + limit;
-      const paginatedCustomers = filteredCustomers.slice(from, to);
-      
-      setCustomers(paginatedCustomers);
-      setTotalCount(filteredCustomers.length);
-      setLastSuccessfulData(paginatedCustomers);
-      
+      const to = from + limit - 1;
+      query = query.range(from, to);
+
+      // Order by name
+      query = query.order('name', { ascending: true });
+
+      const { data, error, count } = await query;
+
+      if (error) throw error;
+
+      const newCustomers = data || [];
+      const newCount = count || 0;
+
+      // Only update state if we have data or if this is the first load
+      if (newCustomers.length > 0 || lastSuccessfulData.length === 0 || !filters.search.trim()) {
+        setCustomers(newCustomers);
+        setLastSuccessfulData(newCustomers);
+        setTotalCount(newCount);
+      } else {
+        // If search returns no results, keep showing last successful data briefly
+        // but update the count to reflect the search results
+        setTotalCount(newCount);
+        
+        // After a short delay, show the empty results
+        setTimeout(() => {
+          setCustomers(newCustomers);
+        }, 150);
+      }
     } catch (err) {
-      console.error('Error fetching customers:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch customers';
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [lastSuccessfulData.length, isAdmin]);
 
   const createCustomer = useCallback(async (
     customerData: Omit<Customer, 'id' | 'created_at' | 'updated_at'>
@@ -203,17 +108,23 @@ export function useCustomers(): UseCustomersReturn {
     setError(null);
 
     try {
-      // In a real implementation, this would create a customer in the database
-      // For now, we'll simulate a successful creation
-      const newCustomer: Customer = {
-        id: `cust-${Date.now()}`,
-        ...customerData,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
+      // Use the appropriate client based on admin status
+      const client = isAdmin ? supabaseAdmin : supabase;
+      
+      const { data, error } = await client
+        .from('customers')
+        .insert({
+          ...customerData,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
 
       toast.success('Customer created successfully');
-      return newCustomer;
+      return data;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create customer';
       setError(errorMessage);
@@ -222,7 +133,7 @@ export function useCustomers(): UseCustomersReturn {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAdmin]);
 
   const updateCustomer = useCallback(async (
     id: string,
@@ -232,21 +143,23 @@ export function useCustomers(): UseCustomersReturn {
     setError(null);
 
     try {
-      // In a real implementation, this would update a customer in the database
-      // For now, we'll simulate a successful update
-      const updatedCustomer: Customer = {
-        id,
-        name: 'Updated Customer',
-        phone: '+254700000000',
-        account_status: 'active',
-        credit_terms_days: 30,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        ...updates
-      };
+      // Use the appropriate client based on admin status
+      const client = isAdmin ? supabaseAdmin : supabase;
+      
+      const { data, error } = await client
+        .from('customers')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
 
       toast.success('Customer updated successfully');
-      return updatedCustomer;
+      return data;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update customer';
       setError(errorMessage);
@@ -255,15 +168,23 @@ export function useCustomers(): UseCustomersReturn {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAdmin]);
 
   const deleteCustomer = useCallback(async (id: string): Promise<boolean> => {
     setLoading(true);
     setError(null);
 
     try {
-      // In a real implementation, this would delete a customer from the database
-      // For now, we'll simulate a successful deletion
+      // Use the appropriate client based on admin status
+      const client = isAdmin ? supabaseAdmin : supabase;
+      
+      const { error } = await client
+        .from('customers')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
       toast.success('Customer deleted successfully');
       return true;
     } catch (err) {
@@ -274,7 +195,7 @@ export function useCustomers(): UseCustomersReturn {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAdmin]);
 
   return {
     customers,

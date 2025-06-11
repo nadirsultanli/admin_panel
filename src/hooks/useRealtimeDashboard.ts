@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseAdmin, isUserAdmin } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 export interface DashboardMetrics {
@@ -78,6 +78,16 @@ export function useRealtimeDashboard(): UseRealtimeDashboardReturn {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      const adminStatus = await isUserAdmin();
+      setIsAdmin(adminStatus);
+    };
+    
+    checkAdminStatus();
+  }, []);
 
   // Function to refresh dashboard data
   const refreshDashboard = useCallback(async () => {
@@ -91,130 +101,125 @@ export function useRealtimeDashboard(): UseRealtimeDashboardReturn {
       setError(null);
       
       try {
-        // Generate mock data for dashboard
+        // Use the appropriate client based on admin status
+        const client = isAdmin ? supabaseAdmin : supabase;
         
-        // Mock today's orders
-        const mockTodayOrders = {
-          count: 8,
-          value: 35000,
-          trend: 12
-        };
+        // Fetch today's orders
+        const today = new Date().toISOString().split('T')[0];
+        const { data: todayOrdersData, error: todayOrdersError } = await client
+          .from('orders')
+          .select('id, total_amount_kes')
+          .eq('order_date', today);
+          
+        if (todayOrdersError) throw todayOrdersError;
         
-        // Mock pending deliveries
-        const mockPendingDeliveries = {
-          count: 15,
-          trend: 5
-        };
+        const todayOrdersCount = todayOrdersData?.length || 0;
+        const todayOrdersValue = todayOrdersData?.reduce((sum, order) => 
+          sum + parseFloat(order.total_amount_kes), 0) || 0;
         
-        // Mock low stock items
-        const mockLowStockItems = {
-          count: 4,
-          trend: -2
-        };
+        // Fetch pending deliveries
+        const { count: pendingCount, error: pendingError } = await client
+          .from('orders')
+          .select('id', { count: 'exact', head: true })
+          .in('status', ['pending', 'confirmed', 'scheduled', 'en_route']);
+          
+        if (pendingError) throw pendingError;
         
-        // Mock active customers
-        const mockActiveCustomers = {
-          count: 42,
-          trend: 8
-        };
+        // Fetch low stock items
+        const { data: lowStockData, error: lowStockError } = await client
+          .from('inventory_balance')
+          .select(`
+            id,
+            qty_full,
+            qty_reserved,
+            product:products(id, name, sku),
+            warehouse:warehouses(id, name)
+          `)
+          .lt('qty_full', 20);
+          
+        if (lowStockError) throw lowStockError;
         
-        // Update metrics with mock data
+        const lowStockCount = lowStockData?.filter(item => 
+          (item.qty_full - item.qty_reserved) < 10
+        ).length || 0;
+        
+        // Fetch active customers
+        const { count: customersCount, error: customersError } = await client
+          .from('customers')
+          .select('id', { count: 'exact', head: true })
+          .eq('account_status', 'active');
+          
+        if (customersError) throw customersError;
+        
+        // Update metrics with random trends for demo
         setMetrics({
-          todayOrders: mockTodayOrders,
-          pendingDeliveries: mockPendingDeliveries,
-          lowStockItems: mockLowStockItems,
-          activeCustomers: mockActiveCustomers
+          todayOrders: {
+            count: todayOrdersCount,
+            value: todayOrdersValue,
+            trend: Math.floor(Math.random() * 20) - 5 // Random trend between -5 and +15
+          },
+          pendingDeliveries: {
+            count: pendingCount || 0,
+            trend: Math.floor(Math.random() * 15) - 3 // Random trend between -3 and +12
+          },
+          lowStockItems: {
+            count: lowStockCount,
+            trend: Math.floor(Math.random() * 10) - 8 // Random trend between -8 and +2
+          },
+          activeCustomers: {
+            count: customersCount || 0,
+            trend: Math.floor(Math.random() * 12) // Random trend between 0 and +12
+          }
         });
         
-        // Generate mock recent orders
-        const mockRecentOrders: RecentOrder[] = [
-          {
-            id: 'ord-001',
-            customer_name: 'Acme Restaurant Group',
-            order_date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-            status: 'pending',
-            total_amount: 12995,
-            items: 5
-          },
-          {
-            id: 'ord-002',
-            customer_name: 'Downtown Diner',
-            order_date: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-            status: 'confirmed',
-            total_amount: 7500,
-            items: 3
-          },
-          {
-            id: 'ord-003',
-            customer_name: 'City Catering Co',
-            order_date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-            status: 'scheduled',
-            total_amount: 18200,
-            items: 7
-          },
-          {
-            id: 'ord-004',
-            customer_name: 'Suburban Grill',
-            order_date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-            status: 'en_route',
-            total_amount: 5400,
-            items: 2
-          },
-          {
-            id: 'ord-005',
-            customer_name: 'Hotel Sunshine',
-            order_date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-            status: 'delivered',
-            total_amount: 22500,
-            items: 9
-          }
-        ];
+        // Fetch recent orders
+        const { data: recentOrdersData, error: recentOrdersError } = await client
+          .from('orders')
+          .select(`
+            id,
+            order_date,
+            status,
+            total_amount_kes,
+            quantity,
+            customer:customers(name)
+          `)
+          .order('created_at', { ascending: false })
+          .limit(10);
+          
+        if (recentOrdersError) throw recentOrdersError;
         
-        setRecentOrders(mockRecentOrders);
+        const formattedRecentOrders: RecentOrder[] = (recentOrdersData || []).map(order => ({
+          id: order.id,
+          customer_name: order.customer?.name || 'Unknown Customer',
+          order_date: order.order_date,
+          status: order.status,
+          total_amount: parseFloat(order.total_amount_kes),
+          items: order.quantity
+        }));
         
-        // Generate mock low stock items
-        const mockLowStockList: LowStockItem[] = [
-          {
-            id: 'prod-1',
-            name: '6kg Standard Cylinder',
-            sku: 'CYL-6KG-STD',
-            current_stock: 5,
-            threshold: 10,
-            warehouse_name: 'Main Depot',
-            urgency: 'warning'
-          },
-          {
-            id: 'prod-2',
-            name: '13kg Standard Cylinder',
-            sku: 'CYL-13KG-STD',
-            current_stock: 2,
-            threshold: 10,
-            warehouse_name: 'Main Depot',
-            urgency: 'critical'
-          },
-          {
-            id: 'prod-3',
-            name: '6kg Composite Cylinder',
-            sku: 'CYL-6KG-COMP',
-            current_stock: 8,
-            threshold: 15,
-            warehouse_name: 'Main Depot',
-            urgency: 'warning'
-          },
-          {
-            id: 'prod-4',
-            name: '13kg Composite Cylinder',
-            sku: 'CYL-13KG-COMP',
-            current_stock: 0,
-            threshold: 10,
-            warehouse_name: 'Industrial Area Depot',
-            urgency: 'critical'
-          }
-        ];
+        setRecentOrders(formattedRecentOrders);
         
-        setLowStockItems(mockLowStockList);
+        // Format low stock items
+        const formattedLowStock: LowStockItem[] = (lowStockData || [])
+          .filter(item => (item.qty_full - item.qty_reserved) < 20)
+          .map(item => {
+            const availableStock = item.qty_full - item.qty_reserved;
+            return {
+              id: item.product?.id || '',
+              name: item.product?.name || 'Unknown Product',
+              sku: item.product?.sku || 'N/A',
+              current_stock: availableStock,
+              threshold: 10,
+              warehouse_name: item.warehouse?.name || 'Unknown Warehouse',
+              urgency: availableStock < 5 ? 'critical' : 'warning'
+            };
+          })
+          .sort((a, b) => a.current_stock - b.current_stock) // Sort by lowest stock first
+          .slice(0, 5); // Take top 5 most critical
         
-        // Generate mock activity feed
+        setLowStockItems(formattedLowStock);
+        
+        // Generate activity feed
         const mockActivities: ActivityItem[] = [
           {
             id: '1',
@@ -268,7 +273,7 @@ export function useRealtimeDashboard(): UseRealtimeDashboardReturn {
           {
             id: '6',
             type: 'stock_movement',
-            message: 'Inventory adjustment: +10 units of "13kg Composite Cylinder"',
+            message: 'Inventory adjustment: +10 units of "13kg Industrial Cylinder"',
             timestamp: new Date(Date.now() - 1000 * 60 * 300).toISOString(), // 5 hours ago
             entity_id: 'PROD-789',
             entity_type: 'product',
@@ -299,7 +304,111 @@ export function useRealtimeDashboard(): UseRealtimeDashboardReturn {
     };
     
     loadDashboardData();
-  }, [refreshTrigger]);
+  }, [refreshTrigger, isAdmin]);
+
+  // Set up real-time subscriptions
+  useEffect(() => {
+    // Subscribe to orders table changes
+    const ordersSubscription = supabase
+      .channel('orders-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders'
+        },
+        (payload) => {
+          console.log('Order change detected:', payload);
+          
+          // Show notification
+          if (payload.eventType === 'INSERT') {
+            toast.success('New order received!', {
+              description: `Order #${payload.new.id.slice(-8)} has been created.`,
+              action: {
+                label: 'View',
+                onClick: () => {
+                  // In a real app, this would navigate to the order
+                  console.log('Navigate to order:', payload.new.id);
+                }
+              }
+            });
+          } else if (payload.eventType === 'UPDATE' && payload.new.status !== payload.old.status) {
+            toast.info(`Order status changed to ${payload.new.status}`, {
+              description: `Order #${payload.new.id.slice(-8)} updated.`
+            });
+          }
+          
+          // Refresh dashboard data
+          refreshDashboard();
+        }
+      )
+      .subscribe();
+
+    // Subscribe to inventory_balance changes
+    const inventorySubscription = supabase
+      .channel('inventory-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'inventory_balance'
+        },
+        (payload) => {
+          console.log('Inventory change detected:', payload);
+          
+          // Show notification for low stock
+          if (payload.eventType === 'UPDATE') {
+            const newQty = payload.new.qty_full - payload.new.qty_reserved;
+            if (newQty < 10 && newQty > 0) {
+              toast.warning('Low stock alert!', {
+                description: `Product is running low on stock (${newQty} units available).`
+              });
+            } else if (newQty <= 0) {
+              toast.error('Out of stock!', {
+                description: 'Product is now out of stock. Please restock soon.'
+              });
+            }
+          }
+          
+          // Refresh dashboard data
+          refreshDashboard();
+        }
+      )
+      .subscribe();
+
+    // Subscribe to customers table changes
+    const customersSubscription = supabase
+      .channel('customers-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'customers'
+        },
+        (payload) => {
+          console.log('New customer added:', payload);
+          
+          // Show notification
+          toast.success('New customer added!', {
+            description: `${payload.new.name} has been added to the system.`
+          });
+          
+          // Refresh dashboard data
+          refreshDashboard();
+        }
+      )
+      .subscribe();
+
+    // Clean up subscriptions
+    return () => {
+      ordersSubscription.unsubscribe();
+      inventorySubscription.unsubscribe();
+      customersSubscription.unsubscribe();
+    };
+  }, [refreshDashboard]);
 
   return {
     metrics,

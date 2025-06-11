@@ -3,20 +3,39 @@ import type { Database } from '@/types/supabase';
 import { logger } from './logger';
 
 // Environment variables with fallbacks for development
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://trcrjinrdjgizqhjdgvc.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRyY3JqaW5yZGpnaXpxaGpkZ3ZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNDE2NTAsImV4cCI6MjA2NDYxNzY1MH0.2-y5r5UzIfcGoHc6BPkRy5rnxWxl4SJwxUehPWBxAao';
-const supabaseServiceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRyY3JqaW5yZGpnaXpxaGpkZ3ZjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTA0MTY1MCwiZXhwIjoyMDY0NjE3NjUwfQ.3yf8UQGvmSl-EiYAdaKfZ8_HC-p5rgQMHseuvhGH59M';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
+const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || 'your-service-role-key';
 
 // Check if we have valid Supabase credentials
 const hasValidCredentials = () => {
   return supabaseUrl !== 'https://your-project.supabase.co' && 
+         supabaseAnonKey !== 'your-anon-key' &&
          supabaseUrl.includes('supabase.co') &&
-         (supabaseServiceRoleKey.length > 20);
+         supabaseAnonKey.length > 20;
 };
 
-// Create Supabase client with TypeScript support using the service role key
-// This gives the admin panel full database access, bypassing RLS policies
-export const supabase = createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
+// Create Supabase client with TypeScript support
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
+  },
+  global: {
+    headers: {
+      'apikey': supabaseAnonKey
+    }
+  }
+});
+
+// Create a service role client for admin operations
+export const supabaseAdmin = createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
@@ -127,7 +146,7 @@ export const isUserAdmin = async (): Promise<boolean> => {
       const { data, error } = await supabase
         .from('admin_users')
         .select('*')
-        .eq('id', user.id)
+        .eq('email', user.email)
         .single();
         
       if (error || !data) return false;
@@ -140,6 +159,12 @@ export const isUserAdmin = async (): Promise<boolean> => {
     logger.error('Failed to check admin status', { context: 'Auth', data: error });
     return false;
   }
+};
+
+// Get the appropriate Supabase client based on user role
+export const getSupabaseClient = async () => {
+  const isAdmin = await isUserAdmin();
+  return isAdmin ? supabaseAdmin : supabase;
 };
 
 // Export helper to check if Supabase is properly configured

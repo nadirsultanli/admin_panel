@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useState, useCallback, useEffect } from 'react';
+import { supabase, supabaseAdmin, isUserAdmin } from '@/lib/supabase';
 import type { Product, ProductFilters } from '@/types/product';
 import { toast } from 'sonner';
 
@@ -21,6 +21,16 @@ export function useProducts(): UseProductsReturn {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [totalCount, setTotalCount] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      const adminStatus = await isUserAdmin();
+      setIsAdmin(adminStatus);
+    };
+    
+    checkAdminStatus();
+  }, []);
 
   const clearError = useCallback(() => {
     setError(null);
@@ -35,133 +45,45 @@ export function useProducts(): UseProductsReturn {
     setError(null);
 
     try {
-      // Generate mock product data
-      const mockProducts: Product[] = [
-        {
-          id: '770e8400-e29b-41d4-a716-446655440001',
-          sku: 'CYL-6KG-STD',
-          name: '6kg Standard Cylinder',
-          description: 'Standard 6kg propane cylinder for domestic use',
-          unit_of_measure: 'cylinder',
-          capacity_kg: 6.00,
-          tare_weight_kg: 5.50,
-          valve_type: 'POL',
-          status: 'active',
-          barcode_uid: '1234567890123',
-          created_at: '2024-01-01T00:00:00Z'
-        },
-        {
-          id: '770e8400-e29b-41d4-a716-446655440002',
-          sku: 'CYL-13KG-STD',
-          name: '13kg Standard Cylinder',
-          description: 'Standard 13kg propane cylinder for commercial use',
-          unit_of_measure: 'cylinder',
-          capacity_kg: 13.00,
-          tare_weight_kg: 10.50,
-          valve_type: 'POL',
-          status: 'active',
-          barcode_uid: '1234567890124',
-          created_at: '2024-01-02T00:00:00Z'
-        },
-        {
-          id: '770e8400-e29b-41d4-a716-446655440003',
-          sku: 'CYL-6KG-COMP',
-          name: '6kg Composite Cylinder',
-          description: 'Lightweight composite 6kg propane cylinder',
-          unit_of_measure: 'cylinder',
-          capacity_kg: 6.00,
-          tare_weight_kg: 3.50,
-          valve_type: 'POL',
-          status: 'active',
-          barcode_uid: '1234567890125',
-          created_at: '2024-01-03T00:00:00Z'
-        },
-        {
-          id: '770e8400-e29b-41d4-a716-446655440004',
-          sku: 'CYL-13KG-COMP',
-          name: '13kg Composite Cylinder',
-          description: 'Lightweight composite 13kg propane cylinder',
-          unit_of_measure: 'cylinder',
-          capacity_kg: 13.00,
-          tare_weight_kg: 8.00,
-          valve_type: 'POL',
-          status: 'end_of_sale',
-          barcode_uid: '1234567890126',
-          created_at: '2024-01-04T00:00:00Z'
-        },
-        {
-          id: '770e8400-e29b-41d4-a716-446655440005',
-          sku: 'CYL-6KG-PREM',
-          name: '6kg Premium Cylinder',
-          description: 'Premium grade 6kg propane cylinder with enhanced safety features',
-          unit_of_measure: 'cylinder',
-          capacity_kg: 6.00,
-          tare_weight_kg: 5.00,
-          valve_type: 'POL',
-          status: 'active',
-          barcode_uid: '1234567890127',
-          created_at: '2024-01-05T00:00:00Z'
-        },
-        {
-          id: '770e8400-e29b-41d4-a716-446655440006',
-          sku: 'CYL-13KG-PREM',
-          name: '13kg Premium Cylinder',
-          description: 'Premium grade 13kg propane cylinder with enhanced safety features',
-          unit_of_measure: 'cylinder',
-          capacity_kg: 13.00,
-          tare_weight_kg: 9.50,
-          valve_type: 'POL',
-          status: 'active',
-          barcode_uid: '1234567890128',
-          created_at: '2024-01-06T00:00:00Z'
-        },
-        {
-          id: '770e8400-e29b-41d4-a716-446655440007',
-          sku: 'CYL-BULK-KG',
-          name: 'Bulk LPG per Kg',
-          description: 'Bulk propane sold by kilogram for large commercial customers',
-          unit_of_measure: 'kg',
-          status: 'obsolete',
-          barcode_uid: '1234567890129',
-          created_at: '2024-01-07T00:00:00Z'
-        }
-      ];
+      // Use the appropriate client based on admin status
+      const client = isAdmin ? supabaseAdmin : supabase;
       
+      let query = client
+        .from('products')
+        .select('*', { count: 'exact' });
+
       // Apply search filter
-      let filteredProducts = [...mockProducts];
-      
-      if (filters.search && filters.search.trim()) {
-        const searchTerm = filters.search.trim().toLowerCase();
-        filteredProducts = filteredProducts.filter(product => 
-          product.name.toLowerCase().includes(searchTerm) ||
-          product.sku.toLowerCase().includes(searchTerm)
-        );
+      if (filters.search) {
+        query = query.or(`sku.ilike.%${filters.search}%,name.ilike.%${filters.search}%`);
       }
-      
+
       // Apply status filter
       if (filters.status !== 'all') {
-        filteredProducts = filteredProducts.filter(product => 
-          product.status === filters.status
-        );
+        query = query.eq('status', filters.status);
       }
-      
+
       // Apply pagination
       const from = (page - 1) * limit;
-      const to = from + limit;
-      const paginatedProducts = filteredProducts.slice(from, to);
-      
-      setProducts(paginatedProducts);
-      setTotalCount(filteredProducts.length);
-      
+      const to = from + limit - 1;
+      query = query.range(from, to);
+
+      // Order by SKU
+      query = query.order('sku', { ascending: true });
+
+      const { data, error, count } = await query;
+
+      if (error) throw error;
+
+      setProducts(data || []);
+      setTotalCount(count || 0);
     } catch (err) {
-      console.error('Error fetching products:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch products';
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAdmin]);
 
   const createProduct = useCallback(async (
     productData: Omit<Product, 'id' | 'created_at'>
@@ -170,16 +92,22 @@ export function useProducts(): UseProductsReturn {
     setError(null);
 
     try {
-      // In a real implementation, this would create a product in the database
-      // For now, we'll simulate a successful creation
-      const newProduct: Product = {
-        id: `prod-${Date.now()}`,
-        ...productData,
-        created_at: new Date().toISOString()
-      };
+      // Use the appropriate client based on admin status
+      const client = isAdmin ? supabaseAdmin : supabase;
+      
+      const { data, error } = await client
+        .from('products')
+        .insert({
+          ...productData,
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
 
       toast.success('Product created successfully');
-      return newProduct;
+      return data;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create product';
       setError(errorMessage);
@@ -188,7 +116,7 @@ export function useProducts(): UseProductsReturn {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAdmin]);
 
   const updateProduct = useCallback(async (
     id: string,
@@ -198,19 +126,20 @@ export function useProducts(): UseProductsReturn {
     setError(null);
 
     try {
-      // In a real implementation, this would update a product in the database
-      // For now, we'll simulate a successful update
-      const updatedProduct: Product = {
-        id,
-        sku: 'UPDATED-SKU',
-        name: 'Updated Product',
-        status: 'active',
-        created_at: new Date().toISOString(),
-        ...updates
-      };
+      // Use the appropriate client based on admin status
+      const client = isAdmin ? supabaseAdmin : supabase;
+      
+      const { data, error } = await client
+        .from('products')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
 
       toast.success('Product updated successfully');
-      return updatedProduct;
+      return data;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update product';
       setError(errorMessage);
@@ -219,15 +148,23 @@ export function useProducts(): UseProductsReturn {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAdmin]);
 
   const deleteProduct = useCallback(async (id: string): Promise<boolean> => {
     setLoading(true);
     setError(null);
 
     try {
-      // In a real implementation, this would delete a product from the database
-      // For now, we'll simulate a successful deletion
+      // Use the appropriate client based on admin status
+      const client = isAdmin ? supabaseAdmin : supabase;
+      
+      const { error } = await client
+        .from('products')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
       toast.success('Product deleted successfully');
       return true;
     } catch (err) {
@@ -238,7 +175,7 @@ export function useProducts(): UseProductsReturn {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAdmin]);
 
   const bulkUpdateStatus = useCallback(async (
     ids: string[], 
@@ -248,8 +185,16 @@ export function useProducts(): UseProductsReturn {
     setError(null);
 
     try {
-      // In a real implementation, this would update multiple products in the database
-      // For now, we'll simulate a successful update
+      // Use the appropriate client based on admin status
+      const client = isAdmin ? supabaseAdmin : supabase;
+      
+      const { error } = await client
+        .from('products')
+        .update({ status })
+        .in('id', ids);
+
+      if (error) throw error;
+
       toast.success(`${ids.length} product(s) updated successfully`);
       return true;
     } catch (err) {
@@ -260,7 +205,7 @@ export function useProducts(): UseProductsReturn {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAdmin]);
 
   return {
     products,

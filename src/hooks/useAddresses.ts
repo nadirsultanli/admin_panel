@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useState, useCallback, useEffect } from 'react';
+import { supabase, supabaseAdmin, isUserAdmin } from '@/lib/supabase';
 import type { Address } from '@/types/customer';
 import { toast } from 'sonner';
 
@@ -18,6 +18,16 @@ export function useAddresses(): UseAddressesReturn {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      const adminStatus = await isUserAdmin();
+      setIsAdmin(adminStatus);
+    };
+    
+    checkAdminStatus();
+  }, []);
 
   const clearError = useCallback(() => {
     setError(null);
@@ -28,52 +38,27 @@ export function useAddresses(): UseAddressesReturn {
     setError(null);
 
     try {
-      // Generate mock address data for the given customer
-      const mockAddresses: Address[] = [
-        {
-          id: '660e8400-e29b-41d4-a716-446655440001',
-          customer_id: customerId,
-          label: 'Main Location',
-          line1: 'Westlands Square',
-          line2: 'Ground Floor, Shop 12',
-          city: 'Nairobi',
-          state: 'Nairobi',
-          postal_code: '00600',
-          country: 'KE',
-          latitude: -1.2634,
-          longitude: 36.8078,
-          is_primary: true,
-          instructions: 'Delivery dock on north side, ring bell twice',
-          created_at: '2024-01-01T00:00:00Z'
-        },
-        {
-          id: '660e8400-e29b-41d4-a716-446655440002',
-          customer_id: customerId,
-          label: 'Branch Office',
-          line1: 'Sarit Centre',
-          line2: 'Level 1, Shop 45',
-          city: 'Nairobi',
-          state: 'Nairobi',
-          postal_code: '00606',
-          country: 'KE',
-          latitude: -1.2634,
-          longitude: 36.8078,
-          is_primary: false,
-          instructions: 'Ring bell at back entrance',
-          created_at: '2024-01-02T00:00:00Z'
-        }
-      ];
+      // Use the appropriate client based on admin status
+      const client = isAdmin ? supabaseAdmin : supabase;
       
-      setAddresses(mockAddresses);
+      const { data, error } = await client
+        .from('addresses')
+        .select('*')
+        .eq('customer_id', customerId)
+        .order('is_primary', { ascending: false })
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      setAddresses(data || []);
     } catch (err) {
-      console.error('Error fetching addresses:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch addresses';
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAdmin]);
 
   const createAddress = useCallback(async (
     addressData: Omit<Address, 'id' | 'created_at'>
@@ -82,16 +67,22 @@ export function useAddresses(): UseAddressesReturn {
     setError(null);
 
     try {
-      // In a real implementation, this would create an address in the database
-      // For now, we'll simulate a successful creation
-      const newAddress: Address = {
-        id: `addr-${Date.now()}`,
-        ...addressData,
-        created_at: new Date().toISOString()
-      };
+      // Use the appropriate client based on admin status
+      const client = isAdmin ? supabaseAdmin : supabase;
+      
+      const { data, error } = await client
+        .from('addresses')
+        .insert({
+          ...addressData,
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
 
       toast.success('Address created successfully');
-      return newAddress;
+      return data;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create address';
       setError(errorMessage);
@@ -100,7 +91,7 @@ export function useAddresses(): UseAddressesReturn {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAdmin]);
 
   const updateAddress = useCallback(async (
     id: string,
@@ -110,21 +101,20 @@ export function useAddresses(): UseAddressesReturn {
     setError(null);
 
     try {
-      // In a real implementation, this would update an address in the database
-      // For now, we'll simulate a successful update
-      const updatedAddress: Address = {
-        id,
-        customer_id: updates.customer_id || 'default-customer-id',
-        line1: 'Updated Address Line 1',
-        city: 'Updated City',
-        country: 'KE',
-        is_primary: false,
-        created_at: new Date().toISOString(),
-        ...updates
-      };
+      // Use the appropriate client based on admin status
+      const client = isAdmin ? supabaseAdmin : supabase;
+      
+      const { data, error } = await client
+        .from('addresses')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
 
       toast.success('Address updated successfully');
-      return updatedAddress;
+      return data;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update address';
       setError(errorMessage);
@@ -133,15 +123,23 @@ export function useAddresses(): UseAddressesReturn {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAdmin]);
 
   const deleteAddress = useCallback(async (id: string): Promise<boolean> => {
     setLoading(true);
     setError(null);
 
     try {
-      // In a real implementation, this would delete an address from the database
-      // For now, we'll simulate a successful deletion
+      // Use the appropriate client based on admin status
+      const client = isAdmin ? supabaseAdmin : supabase;
+      
+      const { error } = await client
+        .from('addresses')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
       toast.success('Address deleted successfully');
       return true;
     } catch (err) {
@@ -152,7 +150,7 @@ export function useAddresses(): UseAddressesReturn {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAdmin]);
 
   return {
     addresses,
