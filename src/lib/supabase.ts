@@ -64,23 +64,25 @@ export const handleSupabaseError = (error: any): string => {
 };
 
 // Connection test function
-export const testConnection = async (): Promise<boolean> => {
+export const testConnection = async (): Promise<{ success: boolean; error?: string }> => {
   try {
     // First check if we have valid credentials
     if (!hasValidCredentials()) {
-      logger.warn('Supabase credentials not configured', { context: 'Connection' });
-      return false;
+      const message = 'Supabase credentials not configured. Please check your .env file and ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set correctly.';
+      logger.warn(message, { context: 'Connection' });
+      return { success: false, error: message };
     }
 
     const { data, error } = await supabase.from('customers').select('count').limit(1);
     if (error) {
       logger.error('Supabase connection test error:', { context: 'Connection', data: error });
-      return false;
+      return { success: false, error: handleSupabaseError(error) };
     }
-    return true;
+    return { success: true };
   } catch (error) {
     logger.error('Supabase connection test failed:', { context: 'Connection', data: error });
-    return false;
+    const errorMessage = error instanceof Error ? handleSupabaseError(error) : 'Connection test failed';
+    return { success: false, error: errorMessage };
   }
 };
 
