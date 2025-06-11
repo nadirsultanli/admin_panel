@@ -101,6 +101,7 @@ export function useRealtimeDashboard(): UseRealtimeDashboardReturn {
       setError(null);
       
       try {
+        console.log("Loading dashboard data...");
         // Use the appropriate client based on admin status
         const client = isAdmin ? supabaseAdmin : supabase;
         
@@ -111,7 +112,10 @@ export function useRealtimeDashboard(): UseRealtimeDashboardReturn {
           .select('id, total_amount_kes')
           .eq('order_date', today);
           
-        if (todayOrdersError) throw todayOrdersError;
+        if (todayOrdersError) {
+          console.error("Error fetching today's orders:", todayOrdersError);
+          throw todayOrdersError;
+        }
         
         const todayOrdersCount = todayOrdersData?.length || 0;
         const todayOrdersValue = todayOrdersData?.reduce((sum, order) => 
@@ -123,7 +127,10 @@ export function useRealtimeDashboard(): UseRealtimeDashboardReturn {
           .select('id', { count: 'exact', head: true })
           .in('status', ['pending', 'confirmed', 'scheduled', 'en_route']);
           
-        if (pendingError) throw pendingError;
+        if (pendingError) {
+          console.error("Error fetching pending deliveries:", pendingError);
+          throw pendingError;
+        }
         
         // Fetch low stock items
         const { data: lowStockData, error: lowStockError } = await client
@@ -137,7 +144,10 @@ export function useRealtimeDashboard(): UseRealtimeDashboardReturn {
           `)
           .lt('qty_full', 20);
           
-        if (lowStockError) throw lowStockError;
+        if (lowStockError) {
+          console.error("Error fetching low stock items:", lowStockError);
+          throw lowStockError;
+        }
         
         const lowStockCount = lowStockData?.filter(item => 
           (item.qty_full - item.qty_reserved) < 10
@@ -149,7 +159,10 @@ export function useRealtimeDashboard(): UseRealtimeDashboardReturn {
           .select('id', { count: 'exact', head: true })
           .eq('account_status', 'active');
           
-        if (customersError) throw customersError;
+        if (customersError) {
+          console.error("Error fetching active customers:", customersError);
+          throw customersError;
+        }
         
         // Update metrics with random trends for demo
         setMetrics({
@@ -186,7 +199,12 @@ export function useRealtimeDashboard(): UseRealtimeDashboardReturn {
           .order('created_at', { ascending: false })
           .limit(10);
           
-        if (recentOrdersError) throw recentOrdersError;
+        if (recentOrdersError) {
+          console.error("Error fetching recent orders:", recentOrdersError);
+          throw recentOrdersError;
+        }
+        
+        console.log("Recent orders data:", recentOrdersData);
         
         const formattedRecentOrders: RecentOrder[] = (recentOrdersData || []).map(order => ({
           id: order.id,

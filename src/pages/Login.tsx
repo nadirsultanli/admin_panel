@@ -24,6 +24,9 @@ export function Login() {
 
   const createDemoUser = async () => {
     try {
+      setIsLoading(true);
+      console.log("Creating demo user...");
+      
       // First try to sign up the demo user
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: 'admin@example.com',
@@ -36,8 +39,11 @@ export function Login() {
       });
 
       if (signUpError && !signUpError.message.includes('User already registered')) {
+        console.error("Sign up error:", signUpError);
         throw signUpError;
       }
+
+      console.log("Sign up response:", signUpData);
 
       // If signup was successful or user already exists, try to sign in
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
@@ -46,8 +52,11 @@ export function Login() {
       });
 
       if (signInError) {
+        console.error("Sign in error:", signInError);
         throw signInError;
       }
+
+      console.log("Sign in response:", signInData);
 
       // Also create an admin user record if it doesn't exist
       if (signInData.user) {
@@ -70,7 +79,10 @@ export function Login() {
 
       return signInData;
     } catch (error) {
+      console.error("Demo user creation error:", error);
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -80,6 +92,8 @@ export function Login() {
     setError(null);
 
     try {
+      console.log("Attempting login with:", { email });
+      
       // First attempt normal login
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -87,10 +101,13 @@ export function Login() {
       });
 
       if (error) {
+        console.error("Login error:", error);
+        
         // If it's the demo credentials and login failed, try to create the demo user
         if (email === 'admin@example.com' && password === 'password123' && 
             error.message.includes('Invalid login credentials')) {
           
+          console.log("Attempting to create demo user...");
           const demoData = await createDemoUser();
           if (demoData.user) {
             toast.success('Demo account created and logged in!');
@@ -100,6 +117,8 @@ export function Login() {
         }
         throw error;
       }
+
+      console.log("Login successful:", data);
 
       if (data.user) {
         toast.success('Login successful!');
@@ -120,6 +139,7 @@ export function Login() {
     setError(null);
 
     try {
+      console.log("Attempting demo login...");
       const data = await createDemoUser();
       
       if (data.user) {

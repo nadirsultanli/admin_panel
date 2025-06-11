@@ -23,7 +23,7 @@ import {
   RefreshCw,
   Activity
 } from 'lucide-react';
-import { supabase, supabaseAdmin, handleSupabaseError, isUserAdmin } from '@/lib/supabase';
+import { supabase, supabaseAdmin, handleSupabaseError, isUserAdmin, testConnection } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { useRealtimeDashboard } from '@/hooks/useRealtimeDashboard';
 import { DashboardMetrics } from '@/components/dashboard/DashboardMetrics';
@@ -68,13 +68,12 @@ export function Dashboard() {
       setConnectionStatus('checking');
       
       // Test basic connection
-      const client = isAdmin ? supabaseAdmin : supabase;
-      const { data, error } = await client.from('customers').select('count').limit(1);
+      const result = await testConnection();
       
-      if (error) {
-        console.error('Supabase connection error:', error);
+      if (!result) {
+        console.error('Supabase connection test failed');
         setConnectionStatus('error');
-        toast.error(`Connection failed: ${handleSupabaseError(error)}`);
+        toast.error(`Connection failed: Could not connect to Supabase`);
         return;
       }
       

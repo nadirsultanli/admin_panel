@@ -4,8 +4,8 @@ import { logger } from './logger';
 
 // Environment variables with fallbacks for development
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://trcrjinrdjgizqhjdgvc.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRyY3JqaW5yZGpnaXpxaGpkZ3ZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNDE2NTAsImV4cCI6MjA2NDYxNzY1MH0.2-y5r5UzIfcGoHc6BPkRy5rnxWxl4SJwxUehPWBxAao';
+const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRyY3JqaW5yZGpnaXpxaGpkZ3ZjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTA0MTY1MCwiZXhwIjoyMDY0NjE3NjUwfQ.3yf8UQGvmSl-EiYAdaKfZ8_HC-p5rgQMHseuvhGH59M';
 
 // Check if we have valid Supabase credentials
 const hasValidCredentials = () => {
